@@ -7,7 +7,7 @@ import json
 import arrow
 import pydash
 import re
-import psycopg2
+# import psycopg2
 import uvicorn
 
 import mysql.connector
