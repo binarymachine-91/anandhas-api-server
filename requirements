@@ -3,4 +3,4 @@ fastapi==0.97.0
 pydash==6.0.2
 uvicorn==0.22.0
 psycopg==3.1.11
-mysql-connector-python==8.1.0
+mysql-connector-python==8.0.33
