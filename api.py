@@ -4,15 +4,15 @@ from typing import Dict
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 import json
-import os
 import arrow
 import pydash
 import re
-
+import psycopg2
+import uvicorn
 
 import mysql.connector
 
-#mysql connection
+# mysql connection
 connection = mysql.connector.connect(
     host="38.242.144.79",
     user="anandhas",
@@ -20,14 +20,15 @@ connection = mysql.connector.connect(
     database="anandhas"
 )
 
+# connection = psycopg2.connect(
+#     dbname="anandhas",
+#     user="anandhas",
+#     password="q4quPXK2sAbA2eaPXXhZ99VYcVpectwn",
+#     host="dpg-ck7pd27sasqs738b8260-a.singapore-postgres.render.com",
+#     port="5432")
 
 
 cursor = connection.cursor()
-
-
-import uvicorn
-import sys
-import os
 
 
 # TODO, to make this flexible when Vite change their port#, i.e. auto track port allowed list
@@ -42,31 +43,13 @@ origins = [
     "http://127.0.0.1:5173",
     "http://127.0.0.1:80",
     "http://127.0.0.1:8080",
+    "https://anandhas-api-server.onrender.com"
 ]
 
-# with open('pid.txt', 'w') as f:
-#     f.write(str(os.getpid()))
-
-# def setPort():
-#     p = 4242
-#     try:
-#         p = sys.argv[1]
-#     except:
-#         print("error with sys.argv, assigned default port: 4242")
-#     return p
 
 app = FastAPI()
-# port = setPort()
 
-
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
-app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'])
+app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=['*'], allow_headers=['*'])
 
 def process_bill(menu, bill):
     items = {}
@@ -84,7 +67,7 @@ def process_bill(menu, bill):
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {"Anandhas Outdoor Catering API v0.1"}
 
 
 @app.post("/update_staff")
@@ -465,7 +448,7 @@ async def get_report_data(bid):
                     "fillColor": [224, 202, 60]
                 }
             }
-            ])
+        ])
         return out
 
     except Exception as e:
