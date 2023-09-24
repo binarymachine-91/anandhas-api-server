@@ -32,24 +32,18 @@ cursor = connection.cursor()
 
 
 # TODO, to make this flexible when Vite change their port#, i.e. auto track port allowed list
-origins = [
-    "http://localhost",
-    "https://localhost",
-    "http://localhost:4242",
-    "http://localhost:5173",
-    "http://127.0.0.1",
-    "https://127.0.0.1",
-    "http://127.0.0.1:4242",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:80",
-    "http://127.0.0.1:8080",
-    "https://anandhas-api-server.onrender.com"
-]
+origins = ["*"]
 
 
 app = FastAPI()
 
-app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=['*'], allow_headers=['*'])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def process_bill(menu, bill):
     items = {}
