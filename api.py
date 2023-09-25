@@ -59,6 +59,23 @@ def process_bill(menu, bill):
 
     return items
 
+def get_bill_no1(d_date):
+    try:
+        statement = "SELECT COUNT(*) AS count FROM bills " \
+                    "where STR_TO_DATE(d_date, '%d%m%Y') = STR_TO_DATE('{}', '%d%m%Y') " \
+                    "GROUP BY STR_TO_DATE(d_date, '%d%m%Y')".format(d_date[0:8])
+
+        cursor.execute(statement)
+        bills = cursor.fetchall()
+
+        if bills:
+            return bills[0][0] + 1
+        else:
+            return 1
+    except Exception as e:
+        print(e)
+
+
 @app.get("/")
 def read_root():
     return {"Anandhas Outdoor Catering API v0.1"}
@@ -248,18 +265,20 @@ async def save_bill(bill_items:Dict= Body(...)):
     try:
         bill_items = jsonable_encoder(bill_items)
 
+        bill_no = get_bill_no1(bill_items['d_date'])
 
         statement = "select * from menu_items"
         cursor.execute(statement)
         menu_items = cursor.fetchall()
-        menu_items_list = [ dict(zip(['menu_id', 'items'], itr)) for itr in menu_items]
+        menu_items_list = [ dict(zip(['menu_id', 'items'], itr)) for itr in menu_items ]
 
         total_items = process_bill(menu_items_list,bill_items['items'])
 
-        statement = "insert into bills (name, mobile, address, bill_no, b_staff, d_staff, o_date, d_date, items, items1) values " \
-                    "('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')".format(
-            bill_items['name'], bill_items['mobile'], bill_items['address'], bill_items['bill_no'],bill_items['billing_staff'],
-            bill_items['delivery_staff'], bill_items['o_date'], bill_items['d_date'],json.dumps(bill_items['items']),json.dumps(total_items)
+
+        statement = "insert into bills (name, mobile, address, bill_no, b_staff, d_staff, o_date, d_date, items, items1, paid, delivery) values " \
+                    "('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')".format(
+            bill_items['name'], bill_items['mobile'], bill_items['address'], bill_no,bill_items['billing_staff'],
+            bill_items['delivery_staff'], bill_items['o_date'], bill_items['d_date'],json.dumps(bill_items['items']),json.dumps(total_items),'Unpaid', 'Not Delivered'
         )
         cursor.execute(statement)
         connection.commit()
@@ -272,7 +291,7 @@ async def save_bill(bill_items:Dict= Body(...)):
 async def get_bills(bid):
     try:
         if bid == '-1':
-            statement = "select bid, name, mobile, address, bill_no, s.sname as b_staff, s1.sname as d_staff, o_date,d_date,items,items1 from bills as b inner join staff as s on b.b_staff = s.sid inner join staff as s1 on s1.sid = b.d_staff;"
+            statement = "select bid, name, mobile, address, bill_no, s.sname as b_staff, s1.sname as d_staff, o_date,d_date,items,items1,paid,delivery from bills as b inner join staff as s on b.b_staff = s.sid inner join staff as s1 on s1.sid = b.d_staff;"
             cursor.execute(statement)
             data = cursor.fetchall()
             bill_data = []
@@ -282,10 +301,10 @@ async def get_bills(bid):
                     itr_list = list(itr)
                     itr_list[9] = json.loads(itr[9])
                     itr_list[10] = json.loads(itr[10])
-                    bill_data.append(dict(zip(('bid','name','mobile','address','bill_ref', 'b_staff','d_staff','o_date','d_date', 'items', 'items1'),itr_list)))
+                    bill_data.append(dict(zip(('bid','name','mobile','address','bill_ref', 'b_staff','d_staff','o_date','d_date', 'items', 'items1', 'paid', 'delivery'),itr_list)))
             return bill_data
         else:
-            statement = "select bid, name, mobile, address, bill_no, s.sname as b_staff, s1.sname as d_staff, o_date,d_date,items,items1 from bills as b inner join staff as s on b.b_staff = s.sid inner join staff as s1 on s1.sid = b.d_staff where bid = {}".format(bid)
+            statement = "select bid, name, mobile, address, bill_no, s.sname as b_staff, s1.sname as d_staff, o_date,d_date,items,items1,paid,delivery from bills as b inner join staff as s on b.b_staff = s.sid inner join staff as s1 on s1.sid = b.d_staff where bid = {}".format(bid)
             cursor.execute(statement)
             data = cursor.fetchall()
             bill_data = []
@@ -294,7 +313,7 @@ async def get_bills(bid):
                     itr_list = list(itr)
                     itr_list[9] = json.loads(itr[9])
                     itr_list[10] = json.loads(itr[10])
-                    bill_data.append(dict(zip(('bid','name','mobile','address','bill_ref', 'b_staff','d_staff','o_date','d_date', 'items', 'items1'),itr_list)))
+                    bill_data.append(dict(zip(('bid','name','mobile','address','bill_ref', 'b_staff','d_staff','o_date','d_date', 'items', 'items1', 'paid', 'delivery'),itr_list)))
             return bill_data
 
     except Exception as e:
@@ -463,6 +482,27 @@ async def get_bill_no():
             return 1
     except Exception as e:
         print(e)
+
+
+@app.get("/update_bill/{bid}")
+async def update_bill(bid):
+    try:
+        statement = "update bills set paid = 'Paid' where bid = {}".format(bid)
+        cursor.execute(statement)
+        connection.commit()
+        return "Bill updated to paid"
+    except Exception as e:
+        return  "error on bill status"
+
+@app.get("/delivery_bill/{bid}")
+async def delivery_bill(bid):
+    try:
+        statement = "update bills set delivery = 'Delivered' where bid = {}".format(bid)
+        cursor.execute(statement)
+        connection.commit()
+        return "Bill updated to delivered"
+    except Exception as e:
+        return  "error on bill status"
 
 
 if __name__ == "__main__":
