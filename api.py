@@ -96,33 +96,36 @@ async def update_staff(staff_details: Dict = Body(...)):
 
 @app.get("/get_staff/{sid}")
 async def get_staff(sid):
-    if sid == "-1":
-        statement = "select * from staff"
-        cursor.execute(statement)
+    try:
+        if sid == "-1":
+            statement = "select * from staff"
+            cursor.execute(statement)
 
-        result = cursor.fetchall()
+            result = cursor.fetchall()
 
-        data = []
-        if result:
-            for itr in result:
-                data.append(dict(zip(['sid', 'sname', 'department'], itr)))
-            return data
+            data = []
+            if result:
+                for itr in result:
+                    data.append(dict(zip(['sid', 'sname', 'department'], itr)))
+                return data
+            else:
+                return "Student not found"
+
         else:
-            return "Student not found"
+            statement = "select * from staff where sid = {}".format(sid)
+            cursor.execute(statement)
 
-    else:
-        statement = "select * from staff where sid = {}".format(sid)
-        cursor.execute(statement)
+            result = cursor.fetchall()
 
-        result = cursor.fetchall()
-
-        data = []
-        if result:
-            for itr in result:
-                data.append(dict(zip(['sid', 'sname', 'department'], itr)))
-            return data
-        else:
-            return "Student not found"
+            data = []
+            if result:
+                for itr in result:
+                    data.append(dict(zip(['sid', 'sname', 'department'], itr)))
+                return data
+            else:
+                return "Student not found"
+    except Exception as e:
+        return "Error on staff"
 
 
 @app.delete("/delete_staff/{sid}")
@@ -164,33 +167,36 @@ async def create_menu(menu_details:Dict = Body(...)):
 
 @app.get("/get_menu/{mid}")
 async def get_menu(mid):
-    if mid == "-1":
-        statement = "select * from menu"
-        cursor.execute(statement)
+    try:
+        if mid == "-1":
+            statement = "select * from menu"
+            cursor.execute(statement)
 
-        result = cursor.fetchall()
+            result = cursor.fetchall()
 
-        data = []
-        if result:
-            for itr in result:
-                data.append(dict(zip(['mid', 'name'], itr)))
-            return data
+            data = []
+            if result:
+                for itr in result:
+                    data.append(dict(zip(['mid', 'name'], itr)))
+                return data
+            else:
+                return "Menu not found"
+
         else:
-            return "Menu not found"
+            statement = "select * from menu where mid = {}".format(mid)
+            cursor.execute(statement)
 
-    else:
-        statement = "select * from menu where mid = {}".format(mid)
-        cursor.execute(statement)
+            result = cursor.fetchall()
 
-        result = cursor.fetchall()
-
-        data = []
-        if result:
-            for itr in result:
-                data.append(dict(zip(['mid', 'name'], itr)))
-            return data
-        else:
-            return "Menu not found"
+            data = []
+            if result:
+                for itr in result:
+                    data.append(dict(zip(['mid', 'name'], itr)))
+                return data
+            else:
+                return "Menu not found"
+    except Exception as e:
+        return "Error on menu"
 
 
 @app.post("/update_menu")
@@ -492,7 +498,7 @@ async def update_bill(bid):
         connection.commit()
         return "Bill updated to paid"
     except Exception as e:
-        return  "error on bill status"
+        return "error on bill status"
 
 @app.get("/delivery_bill/{bid}")
 async def delivery_bill(bid):
@@ -502,7 +508,7 @@ async def delivery_bill(bid):
         connection.commit()
         return "Bill updated to delivered"
     except Exception as e:
-        return  "error on bill status"
+        return "error on bill status"
 
 
 if __name__ == "__main__":
