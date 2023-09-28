@@ -28,7 +28,7 @@ connection = mysql.connector.connect(
 #     port="5432")
 
 
-cursor = connection.cursor()
+
 
 
 # TODO, to make this flexible when Vite change their port#, i.e. auto track port allowed list
@@ -61,6 +61,7 @@ def process_bill(menu, bill):
 
 def get_bill_no1(d_date):
     try:
+        cursor = connection.cursor()
         statement = "SELECT COUNT(*) AS count FROM bills " \
                     "where STR_TO_DATE(d_date, '%d%m%Y') = STR_TO_DATE('{}', '%d%m%Y') " \
                     "GROUP BY STR_TO_DATE(d_date, '%d%m%Y')".format(d_date[0:8])
@@ -84,6 +85,7 @@ def read_root():
 @app.post("/update_staff")
 async def update_staff(staff_details: Dict = Body(...)):
     try:
+        cursor = connection.cursor()
         staff_details = jsonable_encoder(staff_details)
         statement = "update staff set sname = '{}' where sid = {}".format(staff_details['sname'], staff_details['sid'])
         cursor.execute(statement)
@@ -97,6 +99,7 @@ async def update_staff(staff_details: Dict = Body(...)):
 @app.get("/get_staff/{sid}")
 async def get_staff(sid):
     try:
+        cursor = connection.cursor()
         if sid == "-1":
             statement = "select * from staff"
             cursor.execute(statement)
@@ -131,6 +134,7 @@ async def get_staff(sid):
 @app.delete("/delete_staff/{sid}")
 async def delete_staff(sid):
     try:
+        cursor = connection.cursor()
         statement = "delete from staff where sid = {}".format(sid)
         cursor.execute(statement)
         connection.commit()
@@ -142,6 +146,7 @@ async def delete_staff(sid):
 @app.post("/create_staff")
 async def create_staff(staff_details:Dict = Body(...)):
     try:
+        cursor = connection.cursor()
         staff_details = jsonable_encoder(staff_details)
         statement = "insert into staff (sname, department) values ('{}', '{}')".format(staff_details['name'], staff_details['department'])
         cursor.execute(statement)
@@ -155,6 +160,7 @@ async def create_staff(staff_details:Dict = Body(...)):
 @app.post("/create_menu")
 async def create_menu(menu_details:Dict = Body(...)):
     try:
+        cursor = connection.cursor()
         menu_details = jsonable_encoder(menu_details)
         statement = "insert into menu (menu_name) values ('{}')".format(menu_details['name'])
         cursor.execute(statement)
@@ -168,6 +174,7 @@ async def create_menu(menu_details:Dict = Body(...)):
 @app.get("/get_menu/{mid}")
 async def get_menu(mid):
     try:
+        cursor = connection.cursor()
         if mid == "-1":
             statement = "select * from menu"
             cursor.execute(statement)
@@ -202,6 +209,7 @@ async def get_menu(mid):
 @app.post("/update_menu")
 async def update_menu(menu_details: Dict = Body(...)):
     try:
+        cursor = connection.cursor()
         menu_details = jsonable_encoder(menu_details)
         statement = "update menu set menu_name = '{}' where mid = {}".format(menu_details['name'],menu_details['mid'])
         cursor.execute(statement)
@@ -214,6 +222,7 @@ async def update_menu(menu_details: Dict = Body(...)):
 @app.delete("/delete_menu/{mid}")
 async def delete_menu(mid):
     try:
+        cursor = connection.cursor()
         statement = "delete from menu where mid = {}".format(mid)
         cursor.execute(statement)
         connection.commit()
@@ -225,6 +234,7 @@ async def delete_menu(mid):
 @app.post("/create_menu_item")
 async def create_menu_item(menu_items:Dict = Body(...)):
     try:
+        cursor = connection.cursor()
         menu_items = jsonable_encoder(menu_items)
         inc = 1
         for itr in menu_items['menu_items']:
@@ -255,6 +265,7 @@ async def create_menu_item(menu_items:Dict = Body(...)):
 @app.get("/get_menu_items/{mid}")
 async def get_menu_items(mid):
     try:
+        cursor = connection.cursor()
         statement = "select * from menu_items where iid = {}".format(mid)
         cursor.execute(statement)
         menu_items = cursor.fetchall()
@@ -269,6 +280,7 @@ async def get_menu_items(mid):
 @app.post("/save_bill")
 async def save_bill(bill_items:Dict= Body(...)):
     try:
+        cursor = connection.cursor()
         bill_items = jsonable_encoder(bill_items)
 
         bill_no = get_bill_no1(bill_items['d_date'])
@@ -296,6 +308,7 @@ async def save_bill(bill_items:Dict= Body(...)):
 @app.get("/get_bills/{bid}")
 async def get_bills(bid):
     try:
+        cursor = connection.cursor()
         if bid == '-1':
             statement = "select bid, name, mobile, address, bill_no, s.sname as b_staff, s1.sname as d_staff, o_date,d_date,items,items1,paid,delivery from bills as b inner join staff as s on b.b_staff = s.sid inner join staff as s1 on s1.sid = b.d_staff;"
             cursor.execute(statement)
@@ -329,6 +342,7 @@ async def get_bills(bid):
 @app.get("/get_bill_details/{bid}")
 async def get_bill_details(bid):
     try:
+        cursor = connection.cursor()
         statement = "select * from bills where bid = {}".format(bid)
         cursor.execute(statement)
         data = cursor.fetchall()
@@ -372,6 +386,7 @@ async def get_bill_details(bid):
 @app.get("/get_report_data/{bid}")
 async def get_report_data(bid):
     try:
+        cursor = connection.cursor()
         statement = "select * from bills where bid = {}".format(bid)
         cursor.execute(statement)
         data = cursor.fetchall()
@@ -477,7 +492,7 @@ async def get_report_data(bid):
 @app.get("/get_bill_no")
 async def get_bill_no():
     try:
-
+        cursor = connection.cursor()
         statement = "select * from bills where o_date = '{}'".format(arrow.now(tz='Asia/Calcutta').format("DDMMYYYY"))
         cursor.execute(statement)
         bills = cursor.fetchall()
@@ -493,6 +508,7 @@ async def get_bill_no():
 @app.get("/update_bill/{bid}")
 async def update_bill(bid):
     try:
+        cursor = connection.cursor()
         statement = "update bills set paid = 'Paid' where bid = {}".format(bid)
         cursor.execute(statement)
         connection.commit()
@@ -503,6 +519,7 @@ async def update_bill(bid):
 @app.get("/delivery_bill/{bid}")
 async def delivery_bill(bid):
     try:
+        cursor = connection.cursor()
         statement = "update bills set delivery = 'Delivered' where bid = {}".format(bid)
         cursor.execute(statement)
         connection.commit()
