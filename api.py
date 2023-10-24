@@ -56,8 +56,8 @@ def process_bill(menu, bill):
                                            ''.join(char for char in itr1['base'] if char.isalpha()))
 
         items[itr['iid']] = item
-
     return items
+
 
 def get_bill_no1(d_date):
     try:
@@ -241,7 +241,7 @@ async def create_menu_item(menu_items:Dict = Body(...)):
             itr['iid'] = inc
             inc += 1
 
-        str_menu_items = json.dumps(menu_items['menu_items'])
+        str_menu_items = (json.dumps(menu_items['menu_items'], ensure_ascii=False).encode('utf-8')).decode()
         statement = "select * from menu_items where iid = {}".format(menu_items['menu_id'])
         cursor.execute(statement)
         menu = cursor.fetchall()
@@ -278,7 +278,7 @@ async def get_menu_items(mid):
 
 
 @app.post("/save_bill")
-async def save_bill(bill_items:Dict= Body(...)):
+async def save_bill(bill_items: Dict = Body(...)):
     try:
         cursor = connection.cursor()
         bill_items = jsonable_encoder(bill_items)
@@ -288,15 +288,14 @@ async def save_bill(bill_items:Dict= Body(...)):
         statement = "select * from menu_items"
         cursor.execute(statement)
         menu_items = cursor.fetchall()
-        menu_items_list = [ dict(zip(['menu_id', 'items'], itr)) for itr in menu_items ]
+        menu_items_list = [dict(zip(['menu_id', 'items'], itr)) for itr in menu_items]
 
         total_items = process_bill(menu_items_list,bill_items['items'])
-
 
         statement = "insert into bills (name, mobile, address, bill_no, b_staff, d_staff, o_date, d_date, items, items1, paid, delivery) values " \
                     "('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')".format(
             bill_items['name'], bill_items['mobile'], bill_items['address'], bill_no,bill_items['billing_staff'],
-            bill_items['delivery_staff'], bill_items['o_date'], bill_items['d_date'],json.dumps(bill_items['items']),json.dumps(total_items),'Unpaid', 'Not Delivered'
+            bill_items['delivery_staff'], bill_items['o_date'], bill_items['d_date'],(json.dumps(bill_items['items'], ensure_ascii=False).encode('utf-8')).decode(),(json.dumps(total_items,ensure_ascii=False).encode('utf-8')).decode(),'Unpaid', 'Not Delivered'
         )
         cursor.execute(statement)
         connection.commit()
@@ -366,7 +365,7 @@ async def get_bill_details(bid):
             for item in menu_items_list[str(menu['iid'])]:
                 item_dict = {}
                 items_list.append({
-                    "data" : {
+                    "data": {
                         'id': item['iid'],
                         'name': item['item'],
                         'qty': item['qty'],
@@ -397,7 +396,6 @@ async def get_report_data(bid):
 
         menu_list = res[9]
         menu_items_list = res[10]
-
 
 
         out = []
