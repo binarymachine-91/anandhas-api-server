@@ -1,3 +1,4 @@
+import copy
 from typing import Union
 from fastapi import FastAPI, Body
 from typing import Dict
@@ -407,7 +408,7 @@ async def get_report_data(bid):
                 "content": itr['item'],
                 "styles": {
                     "halign": "center",
-                    "valign": "middle"
+                    "valign": "middle",
                 }
             }
             for idx,itr1 in enumerate(menu_items_list[str(itr['iid'])]):
@@ -513,6 +514,127 @@ async def update_bill(bid):
         return "Bill updated to paid"
     except Exception as e:
         return "error on bill status"
+
+@app.get("/get_report_data1/{bid}")
+async def get_report_data1(bid):
+    try:
+        cursor = connection.cursor()
+        statement = "select * from bills where bid = {}".format(bid)
+        cursor.execute(statement)
+        data = cursor.fetchall()
+
+        res = list(data[0])
+        res[9] = json.loads(res[9])
+        res[10] = json.loads(res[10])
+
+        menu_list = res[9]
+        menu_items_list = res[10]
+
+
+        table_body = {
+            'color': '#444',
+            'table': {
+                'headerRows': 1,
+                'widths': [40, 180, 40, 80, 80],
+                'body': []
+            }
+        }
+        out = []
+
+        empty_line = {
+                    'text': '    ',
+                    'style': 'header',
+                    'alignment': 'center'
+                }
+
+        header = {
+            'color': '#444',
+            'table': {
+                'headerRows': 1,
+                'widths': [460],
+                'body': [
+                    [{'text': 'HOTEL ANADHAS', 'style': 'name'}]
+                ],
+            },
+            'layout': 'noBorders'
+        }
+
+        bill_info = {
+            'color': '#444',
+            'table': {
+                'headerRows': 1,
+                'widths': [150, 150, 150],
+                'body': [
+                    [{'text': 'Customer Name: {}'.format(res[1]), 'style': 'billinfo'},
+                     {'text': 'Payment: {}'.format(res[11]), 'style': 'billinfo'},
+                     {'text': 'Bill ID: {}'.format(res[0]), 'style': 'billinfo'}
+                     ],
+                    [{'text': 'Mobile: {}'.format(res[2]), 'style': 'billinfo'},
+                     {'text': 'Delivery: {}'.format(res[12]), 'style': 'billinfo'},
+                     {'text': 'Bill Ref: {}'.format(res[4]), 'style': 'billinfo'}
+                     ],
+                    [{'text': 'Address: {}'.format(res[3]), 'style': 'billinfo'},
+                     {'text': 'Bill By: {}', 'style': 'billinfo'},
+                     {'text': 'Order Date: {}'.format(arrow.get(res[7], 'DDMMYYYY').format('DD/MM/YYYY')), 'style': 'billinfo'}
+                     ],
+                    [{'text': ' ', 'style': 'billinfo'},
+                     {'text': 'Delivery By: {}', 'style': 'billinfo'},
+                     {'text': 'Delivery Date: {}'.format(arrow.get(res[8], 'DDMMYYYYHHmm').format('DD/MM/YYYY HH:mm')), 'style': 'billinfo'}
+                     ],
+
+                ],
+            },
+            'layout': 'noBorders'
+        }
+
+        out.append(header)
+        out.append(empty_line)
+
+        out.append(bill_info)
+
+        for idx,itr in enumerate(menu_list):
+            if idx == 0:
+                tmp_table = copy.deepcopy(table_body)
+                tmp_menu = copy.deepcopy(header)
+                tmp_menu['table']['body'][0][0]['text'] = itr['item']
+                out.append(tmp_menu)
+                out.append(empty_line)
+                for idx1,itr1 in enumerate(menu_items_list[str(itr['iid'])]):
+                    if idx1 == 0:
+                        tmp_table['table']['body'].append([{'text': 'SNO', 'style': 'tableheader'},
+                                                           {'text': 'ITEM', 'style': 'tableheader'},
+                                                           {'text': 'QTY', 'style': 'tableheader'},
+                                                           {'text': 'UNIT', 'style': 'tableheader'},
+                                                           {'text': 'TOTAL', 'style': 'tableheader'}])
+                        tmp_table['table']['body'].append(
+                            [itr1['iid'], itr1['item'], itr1['qty'], itr1['base'], itr1['total']])
+                    else:
+                        tmp_table['table']['body'].append([itr1['iid'], itr1['item'], itr1['qty'], itr1['base'], itr1['total']])
+                out.append(tmp_table)
+            else:
+                tmp_table = copy.deepcopy(table_body)
+                out.append(empty_line)
+                tmp_menu = copy.deepcopy(header)
+                tmp_menu['table']['body'][0][0]['text'] = itr['item']
+                out.append(tmp_menu)
+                out.append(empty_line)
+                for idx1,itr1 in enumerate(menu_items_list[str(itr['iid'])]):
+                    if idx1 == 0:
+                        tmp_table['table']['body'].append([{'text': 'SNO', 'style': 'tableheader'},
+                                                           {'text': 'ITEM', 'style': 'tableheader'},
+                                                           {'text': 'QTY', 'style': 'tableheader'},
+                                                           {'text': 'UNIT', 'style': 'tableheader'},
+                                                           {'text': 'TOTAL', 'style': 'tableheader'}])
+                        tmp_table['table']['body'].append(
+                            [itr1['iid'], itr1['item'], itr1['qty'], itr1['base'], itr1['total']])
+                    else:
+                        tmp_table['table']['body'].append([itr1['iid'], itr1['item'], itr1['qty'], itr1['base'], itr1['total']])
+                out.append(tmp_table)
+
+        return out
+
+    except Exception as e:
+        print("Error on report")
 
 @app.get("/delivery_bill/{bid}")
 async def delivery_bill(bid):
