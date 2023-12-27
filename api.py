@@ -78,6 +78,47 @@ def get_bill_no1(d_date):
         print(e)
 
 
+def fix_iid(data):
+    for idx,itr_data in data.items():
+        id = 1
+        for itr in itr_data:
+            itr['iid'] = id
+            id += 1
+    return data
+
+
+def common_items_frm_menu(menu_items):
+    menu_items_clone = copy.deepcopy(menu_items)
+    menu = []
+    for k,v in menu_items.items():
+        for itr in v:
+            itr['mid'] = k
+        menu.extend(v)
+
+    menu_items_clone['common'] = []
+    for k,v in pydash.collections.group_by(menu, 'item').items():
+        total = 0
+        qty = 0
+        if len(v) > 1:
+            for itr in v:
+                total = total + round((float(''.join(char for char in itr['total'] if not char.isalpha()))), 4)
+                qty = qty + itr['qty']
+                for idx,item in enumerate(menu_items_clone[itr['mid']]):
+                    if item['item'] == k:
+                        menu_items_clone[itr['mid']].pop(idx)
+
+            total = '{} {}'.format(total, ''.join(char for char in itr['total'] if char.isalpha()))
+
+            menu_items_clone['common'].append({
+                'base': '-',
+                'iid': '0',
+                'item': k,
+                'qty': qty,
+                'total': total
+            })
+    menu_items_clone = fix_iid(menu_items_clone)
+    return menu_items_clone
+
 @app.get("/")
 def read_root():
     return {"Anandhas Outdoor Catering API v0.1"}
@@ -530,6 +571,8 @@ async def get_report_data1(bid):
         menu_list = res[9]
         menu_items_list = res[10]
 
+        #separate the common items from menu
+        menu_items_list = common_items_frm_menu(menu_items_list)
 
         table_body = {
             'color': '#444',
@@ -631,6 +674,26 @@ async def get_report_data1(bid):
                         tmp_table['table']['body'].append([itr1['iid'], itr1['item'], itr1['qty'], itr1['base'], itr1['total']])
                 out.append(tmp_table)
 
+        if 'common' in menu_items_list:
+            tmp_table = copy.deepcopy(table_body)
+            out.append(empty_line)
+            tmp_menu = copy.deepcopy(header)
+            tmp_menu['table']['body'][0][0]['text'] = 'Common'
+            out.append(tmp_menu)
+            out.append(empty_line)
+            for idx1, itr1 in enumerate(menu_items_list['common']):
+                if idx1 == 0:
+                    tmp_table['table']['body'].append([{'text': 'SNO', 'style': 'tableheader'},
+                                                       {'text': 'ITEM', 'style': 'tableheader'},
+                                                       {'text': 'QTY', 'style': 'tableheader'},
+                                                       {'text': 'UNIT', 'style': 'tableheader'},
+                                                       {'text': 'TOTAL', 'style': 'tableheader'}])
+                    tmp_table['table']['body'].append(
+                        [itr1['iid'], itr1['item'], itr1['qty'], itr1['base'], itr1['total']])
+                else:
+                    tmp_table['table']['body'].append(
+                        [itr1['iid'], itr1['item'], itr1['qty'], itr1['base'], itr1['total']])
+            out.append(tmp_table)
         return out
 
     except Exception as e:
